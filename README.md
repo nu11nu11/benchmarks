@@ -5,10 +5,10 @@ A set of tools to drive your services to their limits - any maybe beyond.
 ## dos_plone.py
 
 This is the Plone DoS test tool - Availability does matter.
+
 Use it to drown a Plone instance in non-cachable requests.
 
-Synopsis:
-=========
+###Synopsis:
 
 ```
 usage: dos_plone.py [-h] -t TARGET [-a ATTACK] [-n NUMBER] [-v]
