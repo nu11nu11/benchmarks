@@ -18,12 +18,19 @@ import random
 import string
 import time
 
-# Disable the nasty warnings about SSL cert verification. This is a DoS tool!
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+if sys.platform.startswith('darwin'):
+    # Disable the nasty warnings about SSL cert verification. This is a DoS tool!
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+elif sys.platform.startswith('linux'):
+    pass
+elif sys.platform.startswith('win'):
+    pass
+else:
+    pass
 
 sw_name = "Plone DoS test tool"
-sw_version = "v1.1"
+sw_version = "v1.2"
 sw_banner = '\nThis is the ' + sw_name + ' ' + sw_version + ' - Availability does matter.\n' \
             'Use it to drown a Plone instance in non-cachable requests.\n' \
             '(C) 2016 until today: 0_o -- null_null (nu11.nu11[at]yahoo.com)\n\n' \
