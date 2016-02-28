@@ -358,7 +358,7 @@ def main():
         print "\nGot blurry vision? Wrong captcha code!\n"
         return
     print "\nStarting up - hit Ctrl+C to abort (and then be patient)..."
-    for i in range(1, args.number + 1):
+    for _ in range(1, args.number + 1):
         if attacks.get(args.attack) is None:
             # OK, run all attack types at once.
             t = attacks.get(random.randint(0, len(attacks) - 2))(args.target, args.number)
