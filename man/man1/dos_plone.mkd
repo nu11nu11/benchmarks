@@ -17,10 +17,16 @@ dos\_plone.py - Plone DoS test tool
 This is the Plone DoS test tool - Availability does matter.  
 Use it to drown a Plone instance in non-cachable requests.  
 
-This script executes a chosen attack method using multiple threads. Hitting
-Ctrl+C will initiate the program shutdown. No more requests will be generated, 
-however, pending requests will continue to wait until they get answered or time 
-out.  
+This script executes a chosen attack method using multiple threads. While 
+running, one character will be printed out for each request.  
+E: connection error,  
+T: request timeout,  
+H: invalid HTTP response,  
+5: HTTP status 5xx,  
+.: all other HTTP status codes.  
+Hitting Ctrl+C will initiate the program shutdown. No more requests will be 
+generated, however, pending requests will continue to wait until they get 
+answered or time out.  
 
 A captcha needs to be solved in order to start an attack, giving you the 
 opportunity to re-check all settings and determine if you really want to 
